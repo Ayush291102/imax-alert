@@ -1,0 +1,29 @@
+name: IMAX watcher
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # every 5 minutes (GitHub may delay runs a bit)
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Send a test WhatsApp message"
+        type: boolean
+        default: true
+permissions:
+  actions: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: bash check.sh
+        env:
+          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          TEST_MODE: ${{ inputs.test }}
+      - name: Stop watching after alert (so you don't get spammed)
+        if: steps.check.outputs.FOUND == 'true'
+        run: gh workflow disable imax.yml -R ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
