@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       test:
-        description: "Send a test WhatsApp message"
+        description: "Send a test phone notification"
         type: boolean
         default: true
 permissions:
@@ -19,8 +19,7 @@ jobs:
       - id: check
         run: bash check.sh
         env:
-          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
-          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           TEST_MODE: ${{ inputs.test }}
       - name: Stop watching after alert (so you don't get spammed)
         if: steps.check.outputs.FOUND == 'true'
