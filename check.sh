@@ -14,9 +14,18 @@ if [[ "$TEST_MODE" == "true" ]]; then
   echo "Test notification sent."
 fi
 
-code=$(curl -s -L -A "$UA" -o page.html -w "%{http_code}" --max-time 30 "$URL")
-if [[ "$code" != "200" ]]; then echo "Fetch failed: HTTP $code"; exit 1; fi
-if ! grep -q 'Avengers: Doomsday' page.html; then echo "Movie not found on page (layout changed?)"; exit 1; fi
+# District sometimes refuses some cloud computers, so retry up to 4 times before giving up.
+ok=false
+for attempt in 1 2 3 4; do
+  code=$(curl -s -L -A "$UA" -H "Accept-Language: en-IN,en;q=0.9" -o page.html -w "%{http_code}" --max-time 30 "$URL")
+  if [[ "$code" == "200" ]] && grep -q 'Avengers: Doomsday' page.html; then ok=true; break; fi
+  echo "Attempt $attempt failed (HTTP $code)"; sleep 15
+done
+if [[ "$ok" != "true" ]]; then
+  # Not a real error, just a skipped check. Exit 0 so GitHub doesn't email you every 5 minutes.
+  echo "::warning::Could not read District this time (last HTTP $code). Will try again on the next run."
+  exit 0
+fi
 
 named=$(grep -oiE '"name":"Avengers: Doomsday[^"]*IMAX[^"]*"' page.html | sort -u)
 count=$(grep -oi 'imax' page.html | wc -l | tr -d ' ')
